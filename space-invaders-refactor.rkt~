@@ -1,0 +1,108 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname space-invaders-refactor) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+;; A List<X> is one of  
+;; - empty  
+;; - (cons X List<X>)
+
+;;An Invader is a Posn
+;;An IB is Posn
+;;INTERP: represents the (x,y) coordinate of an invader bullet
+;;A SB is Posn
+;;INTERP: represents a spaceship bullet
+
+;;A Position is Posn
+;;INTERP: represents the (x,y) location of the spaceship in the game
+(define-struct spaceship (sp-direction position))
+;;A Spaceship is (make-spaceship SP-Direction Position)
+;;INTERP: represents a spaceship with its direction and position
+
+(define UP 'up)
+(define DOWN 'down)
+(define LEFT 'left)
+(define RIGHT 'right)
+(define WIDTH 500)
+(define HEIGHT 500)
+(define BG (empty-scene WIDTH HEIGHT))
+ 
+
+(define INVADER-SIDE 20)
+(define INVADER-IMAGE (square INVADER-SIDE "solid" "red"))
+(define INVADER-RIGHT-BOUND 410)
+(define SPACE 20)
+
+(define INVADER1 (make-posn 90 20))
+(define INVADER2 (make-posn 90 50))
+(define INVADER3 (make-posn 90 80))
+(define INVADER4 (make-posn 90 110))
+
+(define SPEED 10)
+
+(define SPSHIP-HEIGHT 20)
+(define SPSHIP-WIDTH 40)
+(define SPSHIP-IMAGE (rectangle SPSHIP-WIDTH SPSHIP-HEIGHT "solid" "green"))
+(define SPSHIP-INIT-DIR RIGHT)
+(define SPSHIP-INIT (make-spaceship
+                     SPSHIP-INIT-DIR
+                     (make-posn(/ WIDTH 2) (- HEIGHT (/ SPSHIP-HEIGHT 2)))))
+(define SPSHIP-INIT1 (make-spaceship
+                     LEFT
+                     (make-posn(/ WIDTH 2) (- HEIGHT (/ SPSHIP-HEIGHT 2)))))
+(define BULLET-SIDE 5)
+(define IB-IMAGE (square BULLET-SIDE 'solid 'red))
+(define SB-IMAGE (square BULLET-SIDE 'solid 'green))
+
+(define SCORE-INIT 0)
+(define LIVES-INIT 3)
+
+(define-struct world (spaceship loi loib losb time score live))
+
+;;;;Signature
+;;new-invader: Invader -> Invader
+;;;;Purpose
+;; GIVEN: an invader
+;; RETURNS: next invader in the same row
+
+(define(new-invader invader)
+  (make-posn
+   (+ INVADER-SIDE SPACE (posn-x invader))
+   (posn-y invader)))
+
+;;;; Signature
+;; make-loi: Invader -> LoI
+;;;; Purpose
+;; GIVEN: first invader in each row
+;; RETURNS: a list of LoI
+
+(define(make-loi invader)
+  (if
+   (<= (posn-x invader) INVADER-RIGHT-BOUND)
+   (cons invader (make-loi (new-invader invader)))
+   empty))
+
+(define LOI1 (make-loi INVADER1))
+(define LOI2 (make-loi INVADER2))
+(define LOI3 (make-loi INVADER3))
+(define LOI4 (make-loi INVADER4))
+(define LOI-INIT (append LOI1 LOI2 LOI3 LOI4))
+(define-struct world (spaceship loi loib losb time score live))
+
+;;A World is (make-world Spaceship LoI LoIB LoSB Natural Natural Natural)
+;; WHERE live is 0 to 3
+;; INTERP: represents a world with a spaceship, invader bullets,
+;; spaceship bullets, play time, scores and spaceship lives
+(define WORLD-INIT (make-world SPSHIP-INIT LOI-INIT empty empty 0 0 3))
+
+;;;; Signature:
+;; list-draw: List<X> (Image of X) (Image of gackground)
+;; -> Image of the list and the background 
+(define(list-draw list img-x img-b)
+  (cond
+    [(empty? losb) img-b]
+    [(cons? losb) (place-image img-x
+                      (posn-x(first list))
+                      (posn-y(first list))
+                      (list-draw (rest list) img-b))]))
+
+(define(ibullet-draw loib img)
+  (list-draw loib IB-IMAGE img-b))

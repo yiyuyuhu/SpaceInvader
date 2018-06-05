@@ -1,0 +1,582 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname assign8) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+;;> TOTAL: 140/153
+;;> Good work
+
+;;> use local when possible
+
+;;> Space invader refactor:
+;;> Your code can use fold
+;;> -5 points
+;;> Even the game is not being played and end, there should have no black lines
+;;> -2 points
+;;> You didn't address CONSTANT scalar comment
+;;> -2 points
+
+;                
+;                
+;    ;;;;    ;;  
+;    ;  ;   ; ;  
+;   ;    ;    ;  
+;   ;    ;    ;  
+;   ;    ;    ;  
+;   ;    ;    ;  
+;   ;    ;    ;  
+;    ;  ;;    ;  
+;    ;;;;   ;;;;;
+;       ;        
+;       ;        
+;                
+
+;;;;Signature
+;;take-up-to: List<X> PosInteger -> List<X>
+;;GiVEN a non-empty list and a positive integer n
+;; RETURNS: a list that contains the first n elements from the original list
+
+;;> num is not needed
+;; Halting measure(H.M.): (length list) and num
+
+;; Termination argument(T.A.):
+;; when the list is empty,or the num is 0, the H.M. hits 0, the implementation
+;;returns no recursive call.
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list). H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 0.
+
+;; Or given a non-empty list, H.M. (the num) is n, the implementation
+;; recurs on the (rest list). H.M. for (rest list) is n - 1 so each
+;; recursive call decreases H.M. by 1 and eventually hits 0.
+
+(define (take-up-to list num)
+  (cond
+    [(or (zero? num) (empty? list)) empty]
+    [(cons? list)
+     (cons (first list) (take-up-to (rest list) (- num 1)))]))
+
+(check-expect(take-up-to (list 1) 1)
+             (list 1 ))
+
+(check-expect(take-up-to (list "a" "b" "c" "d") 2)
+             (list "a" "b"))
+
+;;;;Signature
+;;drop-up-to: List PosInteger -> List
+;;GiVEN a non-empty list and a positive integer n
+;; RETURNS: a list with the first n elements from the original list removed
+
+;; Halting measure(H.M.): (length list) and num
+;; Termination argument(T.A.):
+;; when the list is empty,or the num is 0, the H.M. hits 0, the implementation
+;;returns with no recursive call.
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list). H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 0.
+
+;; Or given a non-empty list, H.M. (the num) is n, the implementation
+;; recurs on the (rest list). H.M. for (rest list) is n - 1 so each
+;; recursive call decreases H.M. by 1 and eventually hits 0.
+(define (drop-up-to list num)
+  (cond
+    [(or (zero? num) (empty? list)) list]
+    [else (drop-up-to (rest list) (- num 1))]))
+
+(check-expect(drop-up-to (list 1) 1)
+             empty)
+(check-expect(drop-up-to (list "a" "b" "c" "d" "e" "f") 3)
+             (list "d" "e" "f"))
+
+;;;;Signature
+;;list->chunks:  List<X> PosInteger -> List<List<X> List<X>....>
+;;GIVEN: a non-empty list and a positive integer n
+;;RETURNS: a list of lists of size n
+
+;; Halting measure(H.M.): (length list)
+;; Termination argument(T.A.):
+;; when the list is empty, the H.M. hits 0, the implementation returns with
+;; no recursive call.
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (drop-up-to list num).
+;; H.M. for (drop-up-to list num) is n - num
+;; so each recursive call decreases H.M. by num and eventually hits 0.
+
+(define(list->chunks list num)
+  (cond
+    [(empty? list) empty]
+    [(cons? list)
+     (cons (take-up-to list num) (list->chunks (drop-up-to list num) num))]))
+
+(check-expect(list->chunks (list 1) 1)
+             (list(list 1)))
+(check-expect(list->chunks (list "a" "b" "c" "d" "e" "f") 3)
+             (list (list "a" "b" "c")
+                   (list "d" "e" "f")))
+
+(check-expect(list->chunks (list "a" "b" "c" "d" "e" "f") 2)
+             (list (list "a" "b") (list "c" "d") (list "e" "f")))
+
+
+;                
+;                
+;    ;;;;   ;;;; 
+;    ;  ;  ;    ;
+;   ;    ;      ;
+;   ;    ;      ;
+;   ;    ;     ; 
+;   ;    ;    ;  
+;   ;    ;   ;   
+;    ;  ;;  ;    
+;    ;;;;  ;;;;;;
+;       ;        
+;       ;        
+;                
+
+(define list1(string->list "AAAGCCCTTAAAAAAAA"))
+
+;;;;Signature
+;; extract-same-element: List<Characters> -> List<Characters>
+;;;; Purpose
+;; GIVEN: a list of characters
+;; RETURNS: extract the same elements that
+;; first occur in the list and make them into a list
+
+;; Halting measure(H.M.): (length list) and
+;; whether the first character is the same as the next character
+
+;; Termination argument(T.A.):
+;; when the rest list is empty, the H.M. hits 1, the implementation returns with
+;; no recursive call.
+;; or then the first character is not the same as the next one, 
+;; the implementation returns with no recursive call.
+
+;; Given a non-empty list,
+;; where H.M. (the length of the list) is greater than 1, and
+;; all the characters are the same 
+;; the implementation recurs on the (rest list).
+;; H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 1.
+
+;; Or given a non-empty list, the (length list) is greater than 1,
+;; the implementation will return with no recursive call when the character
+;; is not the same as the next one.
+
+;; the two measures whichever one reaches the termination arguments will
+;; stop the recursion
+
+(define(extract-same-element list)
+  (cond
+    [(empty? (rest list)) list]
+    [(char=? (first list) (first(rest list)))
+     (cons(first list) (extract-same-element (rest list)))]
+    [else
+     (cons(first list) empty)]))
+
+
+(define list2 (extract-same-element list1))
+
+(check-expect(extract-same-element list1)
+             (cons #\A(cons #\A (cons #\A empty))))
+
+;;;;Signature
+;;> "List<List<X> List<X>....>"
+;;> You're over doing it
+;;> -1 point
+;;change: List<Characters> -> List<List<Characters> List<Characters> ...>
+;;;;Purpose
+;;GIVEN: a list of letter characters
+;; RETURNS: a list of lists of repeating letter characters
+
+;; Halting measure(H.M.): (length list)
+;; Termination argument(T.A.):
+;; when the list is empty, the H.M. hits 0, the implementation returns with
+;; no recursive call.
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (drop-up-to list num).
+;; the num is the length of the list of the same elements
+;; H.M. for (drop-up-to list num) is n - num
+;; so each recursive call decreases H.M. by num and eventually hits 0.
+
+(define(change list)
+  (cond
+    ;;> space
+    ;;> -1 point
+    [ (empty? list)list]
+    [(cons? list)
+     (cons (extract-same-element list)
+           (change (drop-up-to list (length (extract-same-element list)))))]))
+
+
+(define list4(change list1))
+(check-expect(change list1)
+             (list
+              (list #\A #\A #\A)
+              (list #\G)
+              (list #\C #\C #\C)
+              (list #\T #\T)
+              (list #\A #\A #\A #\A #\A #\A #\A #\A)))
+
+;;;;Signature
+;;make-string: List<Characters> -> String
+;;GIVEN: a list of characters
+;;RETURNS: a string that shows the character and the number characters
+;;representing the number of the repeating characters in the list
+
+(define(gen-string list)
+  (cond
+    [(empty? list)""]
+    [(cons? list)
+     (string-append
+      (list->string(cons (first list) empty))
+      (number->string (length list)))]))
+
+
+(define list3(gen-string list2))
+
+(check-expect (gen-string (list #\A #\A #\A))
+              "A3")
+(check-expect(gen-string empty)
+             "")
+
+;;;;Signature
+;;gen-entire-string: List<List<Characters>>  -> String
+;;GIVEN: a list of lists of same characters
+;;RETURNS: a string of repeating pattern of
+;; the letter character and the number representing
+;; the letter characters in the list
+
+;; Halting measure(H.M.): (length list)
+;; Termination argument(T.A.):
+;; when the list is empty, the H.M. hits 0, the implementation returns with
+;; no recursive call.
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list).
+;; H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 0.
+
+(define(gen-entire-string list)
+  (cond
+    [(empty? list) ""]
+    [(cons? list)
+     (string-append
+      (gen-string (first  list))
+      (gen-entire-string (rest  list)))]))
+
+(check-expect(gen-entire-string list4)
+             "A3G1C3T2A8")
+;;;;Signature
+;;dna-encode: String -> String
+;;;;Purpose:
+;;GIVEN: a string that contains repeating characters
+;;RETURNS: a string that contains repeating pattern of
+;; letter character and number characters
+(define(dna-encode str)
+  (gen-entire-string(change (string->list str))))
+
+(check-expect
+ (dna-encode "AAAGCCCTTAAAAAAAA")
+ "A3G1C3T2A8")
+
+
+;;;;Signature
+;;is-num? Character -> Boolean
+;;GIVEN a  character
+;; RETURNS true if it is a number characters
+;; else false
+(define (is-num? char)
+  (or
+   (char=? #\0 char)
+   (char=? #\1 char)
+   (char=? #\2 char)
+   (char=? #\3 char)
+   (char=? #\4 char)
+   (char=? #\5 char)
+   (char=? #\6 char)
+   (char=? #\7 char)
+   (char=? #\8 char)
+   (char=? #\9 char)))
+
+
+;                                            
+;       ;                           ;        
+;       ;                           ;        
+;       ;                           ;        
+;    ;;;;   ;;;    ;;;    ;;;    ;;;;   ;;;  
+;   ;; ;;  ;;  ;  ;;  ;  ;; ;;  ;; ;;  ;;  ; 
+;   ;   ;  ;   ;; ;      ;   ;  ;   ;  ;   ;;
+;   ;   ;  ;;;;;; ;      ;   ;  ;   ;  ;;;;;;
+;   ;   ;  ;      ;      ;   ;  ;   ;  ;     
+;   ;; ;;  ;      ;;     ;; ;;  ;; ;;  ;     
+;    ;;;;   ;;;;   ;;;;   ;;;    ;;;;   ;;;; 
+;                                            
+;                                            
+;                                            
+
+
+;;;;Signature
+;;> List<Character> instead of List<Characters>
+;;> -1 point
+;;get-number-list: List<Characters> -> List<Characters>
+;;Purpose:
+;;GIVEN: a list of characters 
+;;RETURNS: extract the number characters that occur in the beginning of the list
+;; and make them into a list
+
+;; Halting measure(H.M.): (length list) and
+;; whether the first element in the list is number or not
+
+;; Termination argument(T.A.):
+;; when the list is empty, the H.M. hits 0, the implementation returns with
+;; no recursive call.
+
+;;or when the first element in the list is not number, the recursive
+;; function terminates
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list).
+;; H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 0.
+
+(define (get-number-list list)
+  (cond
+    [(empty? list) empty]
+    [(cons? list) (if (is-num? (first list))
+                      (cons (first list)
+                            (get-number-list (rest list)))
+                      empty)]))
+
+(define dlist(string->list "A2G1C3T2A10"))
+
+(define
+  dlist2(get-number-list (rest dlist)))
+
+(check-expect(get-number-list (list #\1 #\0 #\B #\1))
+             (list #\1 #\0))
+
+;;;;Signature
+;;count: List<Characters> -> Number
+;;;;Purpose
+;;GIVEN: a list of number characters
+;;RETURNS: the number
+
+;; Halting measure(H.M.): (length list) and
+;; whether first element in the list is number or not
+
+;; Termination argument(T.A.):
+;; when the list is empty, the H.M. hits 0, the implementation returns with
+;; no recursive call. 
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list).
+;; H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 0.
+
+
+(define (count list)
+  (cond
+    [(empty? list) 0]
+    [(cons? list) (+ (* (expt 10 (- (length list) 1))
+                        (string->number (string (first list))))
+                     (count (rest list)))]))
+
+(check-expect(count dlist2)
+             2)
+;;;;Signature
+;;number-decode: List<Characters> -> String
+;;;;Purpose
+;;GIVEN: a list of characters
+;;RETURNS: a string
+
+(define (number-decode list)
+  (replicate (count (get-number-list (rest list)))
+             (string (first list))))
+
+(check-expect(number-decode (string->list "A10"))
+             "AAAAAAAAAA")
+
+;;;;Signature
+;;rle-list-decode: List<Characters> -> String
+;;GIVEN: a list of repeating pattern of letter character and number characters
+;;RETURNS: a string that decodes from the list
+
+;; Halting measure(H.M.): (length list) and
+;; whether the first element in the list is number or not
+
+;; Termination argument(T.A.):
+;; when the list is empty, the H.M. hits 0, the implementation returns with
+;; no recursive call.
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list).
+;; H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 0.
+
+(define (rle-list-decode list)
+  (cond
+    [(empty? list) ""]
+    [(cons? list) (if (not (is-num? (first list)))
+                      (string-append
+                       (number-decode list)
+                       (rle-list-decode (rest list)))
+                      (rle-list-decode (rest list)))]))
+
+(check-expect (rle-list-decode dlist)
+ "AAGCCCTTAAAAAAAAAA")
+
+;;;;Signature
+;;dna-decode: String -> String
+;;GIVEN: a string
+;; RETURNS: a string that decode the content from the given string
+(define(dna-decode str)
+  (rle-list-decode (string->list str)))
+
+(check-expect(dna-decode  "A2G1C3T2A10")
+             "AAGCCCTTAAAAAAAAAA")
+
+
+;                
+;                
+;    ;;;;   ;;;; 
+;    ;  ;  ;    ;
+;   ;    ;      ;
+;   ;    ;      ;
+;   ;    ;   ;;; 
+;   ;    ;      ;
+;   ;    ;      ;
+;    ;  ;; ;    ;
+;    ;;;;   ;;;; 
+;       ;        
+;       ;        
+;
+
+(define num-list (list 3 2 3 1))
+
+;;;;Signature
+;;bubble-swap: list<Number> -> List<Number>
+;;GIVEN: a non-empty list of number
+;;RETURNS: a list of number where the biggest number is
+;; in the end of the list for the first call of this function
+;; if the function is called again the second last position of the list
+;; would be the second biggest number
+
+;; Halting measure(H.M.): (length list) and
+
+;; Termination argument(T.A.):
+;; when the rest list is empty, the H.M. hits 1, the implementation returns with
+;; no recursive call.
+
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list).
+;; H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 0.
+
+(define (bubble-swap lon)
+  (cond
+    [(empty? (rest lon)) lon]
+    [else
+     (if (> (first lon) (first (rest lon)))
+         (cons (first (rest lon)) (bubble-swap (cons (first lon)
+                                                     (rest (rest lon)))))
+         (cons (first lon)  (bubble-swap (rest lon))))]))
+
+(check-expect
+ (bubble-swap num-list)
+ (list 2 3 1 3))
+
+
+;;;;Signature
+;;bubble-sort: PosInteger List<Number> -> List<Number>
+;;GIVEN: a number(which should be the amount of elements in a list)
+;; and a list of unsorted numbers
+;;RETURNS: a sorted list from smallest to the largest number would be garanteed
+;; after number-1 of times of recursion
+
+;; Halting measure(H.M.): n
+
+;; Termination argument(T.A.):
+;; when the H.M. hits 1, the implementation returns with
+;; no recursive call.
+
+
+;; Given a non-empty list, where the H.M. is greater than 1,
+;; the implementation recurs on the list.
+;; after one recursion, the H.M. for list is n - 1
+;; so each recursive call decreases H.M. by 1 and the H.M. eventually hits 1.
+
+(define (bubble-sort n list)
+  (cond
+    [(= n 1) (bubble-swap list)]
+    [else(bubble-sort (- n 1) (bubble-swap list))]))
+
+;;> Did you check this test?
+;;> test caused errors
+;;> -1 point
+(check-expect
+ (bubble-sort ( (length num-list)  num-list)
+ (list 1 2 3 3)))
+
+;;;;Signature
+;;bsort-inner: List<Number> -> List<Number>
+;;GIVEN: a list of numbers
+;; RETURNS: a list of numbers where the smallest number is
+;; in the beginning of the list for the first call of this function
+;; if the function is called again the second position of the list
+;; would be the second smallest number
+
+;; Halting measure(H.M.): (length list) 
+
+;; Termination argument(T.A.):
+;; when the rest list is empty, the H.M. hits 1, the implementation returns with
+;; no recursive call.
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list).
+;; H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 1.
+
+(define(bsort-inner list)
+  (cond
+    [(empty? (rest list))
+     list]
+    [else
+     (if (<= (first list) (first (bsort-inner (rest list))))
+         (cons (first list)  (bsort-inner (rest list)))
+         (cons (first (bsort-inner (rest list)))
+               (cons (first list)
+                     (rest (bsort-inner(rest list))))))]))
+
+(check-expect(bsort-inner num-list)
+             (list 1 3 2 3))
+(check-expect(bsort-inner (list 1 3 2 3))
+             (list 1 2 3 3))
+
+;;;;Signature
+;;bsort: List<Number> -> List<Number>
+;;GIVEN: a list of unsorted numbers
+;;RETURNS: a sorted list from smallest to the largest number
+;; Halting measure(H.M.): (length list) 
+
+;; Termination argument(T.A.):
+;; when the list is empty, the H.M. hits 0, the implementation returns with
+;; no recursive call.
+
+;; Given a non-empty list, H.M. (the length of the list) is n,
+;; the implementation recurs on the (rest list).
+;; H.M. for (rest list) is n - 1
+;; so each recursive call decreases H.M. by 1 and eventually hits 0.
+;;> Spacing, be careful
+(define(bsort list)
+  (if(empty? list)
+     empty
+     (cons (first (bsort-inner list)) (bsort (rest (bsort-inner list))))))
+
+(check-expect (bsort empty)
+              empty)
+(check-expect (bsort (list 3 2 1 4))
+              (list 1 2 3 4))
+
